@@ -1,0 +1,23 @@
+Metadata-Version: 1.0
+Name: simple-sqlalchemy
+Version: 0.0.1
+Summary: a simple query tools based on sqlalchemy
+Home-page: http://git.ucweb.local/heyu/simple-sqlalchemy
+Author: heyu
+Author-email: hy99526@alibaba-inc.com
+License: UNKNOWN
+Description: 
+        simple-sqlalchemy
+        -------------
+        simple-sqlalchemy provides easy and simple query method to access mysql data. It
+        lets you get or change data in a easy way, especially when you get many conditions and
+        will get any of them.For example, in a query page.
+        
+        Links
+        `````
+        * `documentation <http://git.ucweb.local/heyu/simple-sqlalchemy>`_
+        *
+        
+        
+        
+Platform: all
