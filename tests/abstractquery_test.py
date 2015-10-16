@@ -81,7 +81,7 @@ class ChargeRecordQuery(BaseQuery):
 
 
 class Tests(unittest.TestCase):
-    basedao = Dal(DBConfig(host="127.0.0.1", port=3306, user="root", pwd="gannicus", db="simple_demo"))
+    basedao = Dal(DBConfig(host="127.0.0.1", port=3306, user="", pwd="", db="simple_demo"))
 
     @classmethod
     def setUpClass(cls):
