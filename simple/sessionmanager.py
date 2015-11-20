@@ -43,23 +43,23 @@ class SessionFactory():
         :type dbconfig: DBConfig
         :rtype: Session
         """
-        mapName = cls._get_name(dbconfig)
-        if mapName not in cls.sessions.keys():
-            cls.sessions[mapName] = []
+        mapname = cls._get_name(dbconfig)
+        if mapname not in cls.sessions.keys():
+            cls.sessions[mapname] = []
 
-        mysqlConnect = "mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}".format(
+        mysqlconnect = "mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}".format(
             user=dbconfig.user, password=dbconfig.pwd, host=dbconfig.host, port=dbconfig.port, database=dbconfig.db)
-        engine = create_engine(mysqlConnect, echo=cls.is_debug, pool_size=10,
+        engine = create_engine(mysqlconnect, echo=cls.is_debug, pool_size=10,
                                pool_recycle=18000)  # , poolclass=NullPool)
         # thread-local
-        DBSession = scoped_session(
+        dbsession = scoped_session(
             sessionmaker(
                 bind=engine,
                 autoflush=True,
                 autocommit=False,
             ))
-        session = DBSession()
-        cls.sessions[mapName].append(session)
+        session = dbsession()
+        cls.sessions[mapname].append(session)
         return session
 
     @classmethod
@@ -68,11 +68,11 @@ class SessionFactory():
         :type dbconfig: DBConfig
         :return:
         '''
-        mapName = cls._get_name(dbconfig)
-        if mapName and mapName in cls.sessions.keys():  # close one session
-            for session in cls.sessions[mapName]:
+        mapname = cls._get_name(dbconfig)
+        if mapname and mapname in cls.sessions.keys():  # close one session
+            for session in cls.sessions[mapname]:
                 session.close()
-                print("close {name} session".format(name=mapName))
+                print("close {name} session".format(name=mapname))
                 return
 
         # close all sessions

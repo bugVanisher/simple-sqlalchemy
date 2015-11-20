@@ -1,11 +1,10 @@
 #! /usr/bin/env python
 # coding:utf-8
 import sys
-
+import time
 from sqlalchemy import func, distinct, inspect
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.query import Query
-
 from sessionmanager import *
 
 __author__ = 'heyu'
@@ -57,9 +56,11 @@ class BaseQuery():
     """
         query对象的父类 查询类继承
     """
-    _page = None  # 第几页开始
-    _count = None  # 取多少个
-    _order_by = []  # 排序字段,支持多个
+
+    def __init__(self):
+        self._page = None  # 第几页开始
+        self._count = None  # 取多少个
+        self._order_by = []  # 排序字段,支持多个
 
     def set_page(self, page):
         if page < 0:
@@ -78,8 +79,13 @@ class BaseQuery():
         return self._count
 
     def set_order(self, sort):
+        """
+
+        :type sort: Sort
+        :return:
+        """
         if not isinstance(sort, Sort):
-            sys.exit("sort obj illegal")
+            return
         self._order_by.append(sort)
 
     def get_order(self):
@@ -144,6 +150,14 @@ class CloseSession:
         return wrapped
 
 
+class DdlUpdateFields():
+    def __init__(self, *fields):
+        self.fields = fields
+
+    def get_fields(self):
+        return self.fields
+
+
 class Dal():
     """
         封装数据库操作的抽象类,支持多线程
@@ -187,8 +201,8 @@ class Dal():
         elif OperateType.IS_NOT_NULL == attr_field.operate_type:
             statement = column != None
         elif OperateType.IN == attr_field.operate_type:
-            if isinstance(attr_field.value, str):
-                print("{param} should be a list or a tuple not str".format(param=attr_field.value))
+            if not isinstance(attr_field.value, list):
+                raise Exception("value should be a list")
             statement = column.in_(attr_field.value)
         elif OperateType.NOT_IN == attr_field.operate_type:
             if isinstance(attr_field.value, str):
@@ -200,13 +214,13 @@ class Dal():
 
     def _select_fields(self, select_field):
         if isinstance(select_field, type):
-            baseQuery = self.session.query(select_field)
+            basequery = self.session.query(select_field)
         else:
             if isinstance(select_field, InstrumentedAttribute):
-                baseQuery = self.session.query(select_field)
+                basequery = self.session.query(select_field)
             else:
-                baseQuery = self.session.query(*select_field)
-        return baseQuery
+                basequery = self.session.query(*select_field)
+        return basequery
 
     def _combine(self, base_query, condition):
         """
@@ -307,19 +321,21 @@ class Dal():
                 base_query = base_query.order_by(order_field.order_by.desc())
         return base_query
 
-    def get_distinct_field(self, field, condition):
+    def get_distinct_field(self, distinct_field, condition):
         """
-            返回去重的列,是非orm的list类型
-        :param field:
+            返回去重的列
+        :param distinct_field:
         :param condition:
         :return:
         """
-        baseQuery = self.session.query(field).distinct()
-        baseQuery = self._combine(baseQuery, condition)
-        return baseQuery.all()
+        results = self.get_field_list(DdlUpdateFields(distinct_field), condition)
+        out_list = []
+        for result in set(results):
+            out_list.append(result)
+        return out_list
 
     @DeprecationWarning
-    def conbine_query_in_groups(self, select_field, group_conditions):
+    def combine_query_in_groups(self, select_field, group_conditions):
         """
             use self_group()  & |
         :param condition:
@@ -333,8 +349,8 @@ class Dal():
                                 (spectator_table.c.player_id == player.steamid)).self_group()
 
         """
-        baseQuery = self._select_fields(select_field)
-        return baseQuery.filter(group_conditions).all()
+        basequery = self._select_fields(select_field)
+        return basequery.filter(group_conditions).all()
 
     def save(self, obj):
         """
@@ -342,6 +358,10 @@ class Dal():
         :param obj:
         :return:
         """
+        if hasattr(obj, "ctime"):
+            obj.ctime = int(time.time())
+        if hasattr(obj, "utime"):
+            obj.utime = int(time.time())
         try:
             self.session.add(obj)
             self.session.commit()
@@ -350,25 +370,50 @@ class Dal():
             self.session.rollback()
             return False
 
-    def get_list(self, select_field, condition):
+    def get_field_list(self, ddl_update_fields, condition):
         """
-            返回orm对象list 如果selectField不是orm对象则返回简单的list
-        :param select_field:
+
+        :type ddl_update_fields: DdlUpdateFields
         :param condition:
         :return:
         """
-        base_query = self._select_fields(select_field)
+        is_one_field = False
+        if len(ddl_update_fields.get_fields()) == 1:
+            is_one_field = True
+        try:
+            basequery = self.session.query(*ddl_update_fields.get_fields())
+            basequery = self._combine(basequery, condition)
+            results = basequery.all()
+            if is_one_field:
+                one_field_list = []
+                for result in results:
+                    one_field_list.append(result[0])
+                return one_field_list
+            return results
+        except:
+            self.session.rollback()
+            return []
+
+    def get_list(self, ddl_class, condition):
+        """
+            返回orm对象list 如果selectField不是orm对象则返回简单的list
+        :param ddl_class:
+        :param condition:
+        :return:
+        """
+        base_query = self._select_fields(ddl_class)
         base_query = self._combine(base_query, condition)
 
         try:
             return base_query.all()
         except Exception, e:
+            self.session.rollback()
             raise Exception(e)
 
     def get(self, pks, ddl_class):
         """
 
-        :param pks:
+        :param pks: primary key
         :param ddl_class:
         :return: ddl_class
         """
@@ -381,6 +426,19 @@ class Dal():
         except Exception, e:
             raise Exception(e)
 
+    def get_by_pks(self, atuple, ddl_class):
+        """
+            return one record
+        :param atuple: a tuple has the number of pri-keys member
+        :param ddl_class:
+        :return:
+
+        """
+        try:
+            return self.session.query(ddl_class).get(atuple)
+        except Exception:
+            self.session.rollback()
+
     def batch_save(self, objs):
         """
 
@@ -390,11 +448,15 @@ class Dal():
         try:
             if not isinstance(objs, (list, tuple)):
                 return False
+            for obj in objs:
+                if hasattr(obj, "ctime"):
+                    obj.ctime = int(time.time())
+                if hasattr(obj, "utime"):
+                    obj.utime = int(time.time())
             self.session.add_all(objs)
             self.session.commit()
             return True
         except Exception, e:
-            print(e)
             self.session.rollback()
             return False
 
@@ -415,11 +477,13 @@ class Dal():
     def update(self, obj, update_dict, condition):
         """
             update on condition
-        :param obj:
-        :param update_dict:
-        :param condition:
+        :type obj:
+        :type update_dict: dict
+        :type condition:
         :return:
         """
+        if not update_dict.get("utime"):
+            update_dict["utime"] = int(time.time())
         try:
             base_query = self.session.query(obj)
             base_query = self._combine(base_query, condition)
@@ -447,17 +511,20 @@ class Dal():
             self.session.rollback()
             return False
 
-    def count(self, single_select_field, condition):
+    def count(self, single_field, condition):
         """
             计算数量
-        :type single_select_field: InstrumentedAttribute
+        :type single_field: InstrumentedAttribute
         :type condition:
         :rtype:
         """
-        base_query = self.session.query(func.count(single_select_field))
+        base_query = self.session.query(func.count(single_field))
         base_query = self._combine(base_query, condition)
-        result = base_query.one()
-        return result
+        try:
+            result = base_query.one()
+            return result[0]
+        except:
+            self.session.rollback()
 
     def distinct_count(self, select_field, condition):
         """
@@ -468,18 +535,23 @@ class Dal():
         """
         base_query = self.session.query(func.count(distinct(select_field)))
         base_query = self._combine(base_query, condition)
-        return base_query.one()
+        try:
+            result = base_query.one()
+            return result[0]
+        except:
+            self.session.rollback()
 
-    def execute(self, raw_sql):
+    def execute(self, raw_sql, param_dict):
         """
 
-        :type raw_sql: str
-        :rtype: sqlalchemy.engine.result.ResultProxy
+        :type raw_sql: str ; select * from table where id in (:id);
+        :type param_dict
+        :rtype: list
         """
         try:
-            result = self.session.execute(raw_sql)
+            result = self.session.execute(raw_sql, param_dict)
             self.session.commit()
-            return result
+            return result.fetchall()
         except Exception:
             self.session.rollback()
             return None

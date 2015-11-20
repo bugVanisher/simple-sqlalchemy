@@ -3,10 +3,8 @@
 
 import unittest
 import time
-
 from sqlalchemy import Column, BIGINT, VARCHAR, INT, SMALLINT
 from sqlalchemy.ext.declarative import declarative_base
-
 from simple.abstractquery import *
 
 """
