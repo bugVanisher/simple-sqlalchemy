@@ -2,9 +2,11 @@
 # coding:utf-8
 import sys
 import time
+
 from sqlalchemy import func, distinct, inspect
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.query import Query
+
 from sessionmanager import *
 
 __author__ = 'heyu'
@@ -132,25 +134,27 @@ class CloseSession:
         关闭数据库连接,对于守护进程,还是使用下好
     """
 
-    def __init__(self, dbconfig=None):  # 装饰器@CloseSession在方法结束后关闭数据库连接
+    def __init__(self, session):  # 装饰器@CloseSession在方法结束后关闭数据库连接
         """
-        :type dbconfig: DBConfig
+        :type session:
         """
-        self.dbconfig = dbconfig
+        self.session = session
 
     def __call__(self, fn):
         def wrapped(*args, **kwargs):
             result = fn(*args, **kwargs)
-            if self.dbconfig:
-                SessionFactory.close_sessions(self.dbconfig)
-            else:
-                SessionFactory.close_sessions()
+            if self.session:
+                SessionBase.close_session(self.session)
             return result
 
         return wrapped
 
 
 class DdlUpdateFields():
+    """
+        指定哪些字段
+    """
+
     def __init__(self, *fields):
         self.fields = fields
 
@@ -158,20 +162,20 @@ class DdlUpdateFields():
         return self.fields
 
 
-class Dal():
+class Dal(SessionBase):
     """
-        封装数据库操作的抽象类,支持多线程
+        封装数据库操作的操作类,支持多线程
     """
 
     def __init__(self, dbconfig=None):
-        # 直接实例化,若使用多线程则重复实例化即可
         """
-
+            直接实例化,若使用多线程则为此多个连接
         :type dbconfig: DBConfig
         """
+
         if not isinstance(dbconfig, DBConfig):
             raise Exception("not a DBConfig obj")
-        self.session = SessionFactory.get_session(dbconfig)
+        self.session = SessionBase.get_session(dbconfig)
         self.dbconfig = dbconfig
 
     def _generate_conditon(self, column, attr_field):
@@ -212,6 +216,7 @@ class Dal():
             print("{operator} is not supported".format(operator=attr_field.operate_type))
         return statement
 
+    @DeprecationWarning
     def _select_fields(self, select_field):
         if isinstance(select_field, type):
             basequery = self.session.query(select_field)
@@ -338,8 +343,6 @@ class Dal():
     def combine_query_in_groups(self, select_field, group_conditions):
         """
             use self_group()  & |
-        :param condition:
-        :return:
 
         demo
             ((Lobby.id == Team.lobby_id) &
@@ -396,12 +399,12 @@ class Dal():
 
     def get_list(self, ddl_class, condition):
         """
-            返回orm对象list 如果selectField不是orm对象则返回简单的list
-        :param ddl_class:
-        :param condition:
+            返回orm对象list
+        :type ddl_class:    DeclarativeMeta
+        :type condition:
         :return:
         """
-        base_query = self._select_fields(ddl_class)
+        base_query = self.session.query(ddl_class)
         base_query = self._combine(base_query, condition)
 
         try:
@@ -410,25 +413,28 @@ class Dal():
             self.session.rollback()
             raise Exception(e)
 
-    def get(self, pks, ddl_class):
+    def get(self, pk, ddl_class):
         """
-
-        :param pks: primary key
+            根据主键获取
+        :param pk: primary key
         :param ddl_class:
         :return: ddl_class
         """
-        if not isinstance(pks, (list, tuple)):
-            pks = [pks]
-        primary_key = inspect(ddl_class).primary_key[0]
-        base_query = self.session.query(ddl_class).filter(primary_key.in_(pks))
+        if isinstance(pk, (list, tuple)):
+            raise Exception("not support list")
         try:
-            return base_query.all()
+            primary_key = inspect(ddl_class).primary_key[0]
+        except:
+            raise Exception("table has no primary key?")
+        base_query = self.session.query(ddl_class).filter(primary_key == pk)
+        try:
+            return base_query.first()
         except Exception, e:
             raise Exception(e)
 
     def get_by_pks(self, atuple, ddl_class):
         """
-            return one record
+            组合主键时使用,只支持单个记录获取
         :param atuple: a tuple has the number of pri-keys member
         :param ddl_class:
         :return:
@@ -441,7 +447,7 @@ class Dal():
 
     def batch_save(self, objs):
         """
-
+            批量插入,一次数据量不能太多否则容易超时失败
         :type objs: list
         :rtype: bool
         """
@@ -474,18 +480,19 @@ class Dal():
             self.session.rollback()
             return False
 
-    def update(self, obj, update_dict, condition):
+    def update(self, ddl_class, update_dict, condition):
         """
             update on condition
-        :type obj:
+        :type ddl_class:
         :type update_dict: dict
         :type condition:
         :return:
         """
-        if not update_dict.get("utime"):
-            update_dict["utime"] = int(time.time())
+        if hasattr(ddl_class, "utime"):
+            if not update_dict.get(ddl_class.utime):
+                update_dict[ddl_class.utime] = int(time.time())
         try:
-            base_query = self.session.query(obj)
+            base_query = self.session.query(ddl_class)
             base_query = self._combine(base_query, condition)
             count = base_query.update(update_dict, synchronize_session=False)
             self.session.commit()
@@ -549,12 +556,12 @@ class Dal():
         :rtype: list
         """
         try:
-            result = self.session.execute(raw_sql, param_dict)
+            result = self.session.execute(raw_sql, param_dict).fetchall()
             self.session.commit()
-            return result.fetchall()
+            return result
         except Exception:
             self.session.rollback()
             return None
 
     def close(self):
-        SessionFactory.close_sessions(self.dbconfig)
+        SessionBase.close_session(self.session)

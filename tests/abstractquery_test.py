@@ -11,7 +11,7 @@ from simple.abstractquery import *
     Created by heyu on 2015/10/12
 """
 BaseDDL = declarative_base()
-SessionFactory.set_debug(False)
+SessionBase.set_debug(False)
 
 
 class ChargeRecord(BaseDDL):
