@@ -1,2 +1,15 @@
+*.tar.gz
+*.zip
 *.pyc
+**/.temp/
+**/temp/
+**/tmp/
+*.log
+.idea/
+.classpath
+.project
+*.bak
+test.py
+demo.py
+**/logs/
 
