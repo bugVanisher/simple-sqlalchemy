@@ -3,11 +3,10 @@
 import sys
 import time
 
+from sessionmanager import *
 from sqlalchemy import func, distinct, inspect
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.query import Query
-
-from sessionmanager import *
 
 __author__ = 'heyu'
 """
@@ -328,12 +327,14 @@ class Dal(SessionBase):
 
     def get_distinct_field(self, distinct_field, condition):
         """
-            返回去重的列
-        :param distinct_field:
+            返回去重的列,支持多列
+        :param distinct_field: list | tuple
         :param condition:
-        :return:
+        :rtype: list
         """
-        results = self.get_field_list(DdlUpdateFields(distinct_field), condition)
+        if not isinstance(distinct_field, (list, tuple)):
+            distinct_field = [distinct_field]
+        results = self.get_field_list(DdlUpdateFields(*distinct_field), condition)
         out_list = []
         for result in set(results):
             out_list.append(result)
@@ -402,7 +403,7 @@ class Dal(SessionBase):
             返回orm对象list
         :type ddl_class:    DeclarativeMeta
         :type condition:
-        :return:
+        :rtype: list
         """
         base_query = self.session.query(ddl_class)
         base_query = self._combine(base_query, condition)
@@ -486,7 +487,7 @@ class Dal(SessionBase):
         :type ddl_class:
         :type update_dict: dict
         :type condition:
-        :return:
+        :rtype: bool
         """
         if hasattr(ddl_class, "utime"):
             if not update_dict.get(ddl_class.utime):
