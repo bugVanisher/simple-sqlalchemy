@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 simple-sqlalchemy
 
 simple-sqlalchemy provides easy and simple query methods to access mysql data. It
@@ -12,3 +13,7 @@ configuration and then try 'python setup.py test' to  run the unit tests
 or 
 you can run 'python setup.py sdist' to make a zip (on windows) or tar.gz (on linux) 
 then unzip it and run 'python setup.py install'  to  install simple-sqlalchemy on your machine.
+=======
+# simple-sqlalchemy
+build query in an elgant way using sqlchemy
+>>>>>>> 6629eae527b2f2267ab73443b6d314fb28ee4a79
