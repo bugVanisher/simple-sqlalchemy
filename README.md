@@ -1,2 +1,2 @@
 # simple-sqlalchemy
-build query in a elgant way
+build query in an elgant way using sqlchemy
