@@ -33,11 +33,11 @@ class SessionBase():
         :type dbconfig: DBConfig
         :rtype: Session
         """
-        # mysqlconnect = "mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}".format(
+        # mysqlconnect = "mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}?charset=utf8".format(
         #     user=dbconfig.user, password=dbconfig.pwd, host=dbconfig.host, port=dbconfig.port, database=dbconfig.db)
         # engine = create_engine(mysqlconnect, echo=cls.is_debug, pool_size=5, pool_recycle=7200)
         mysqlconnect = URL(drivername='mysql', username=dbconfig.user, password=dbconfig.pwd,
-                           host=dbconfig.host, port=dbconfig.port, database=dbconfig.db)
+                           host=dbconfig.host, port=dbconfig.port, database=dbconfig.db, query=dict(charset="utf8"))
         engine = create_engine(mysqlconnect, echo=cls.is_debug, poolclass=NullPool)
         # 禁用SQLAlchemy提供的数据库连接池，只需要在调用create_engine时指定连接池为NullPool，
         # SQLAlchemy就会在执行session.close()后立刻断开数据库连接
