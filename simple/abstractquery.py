@@ -3,10 +3,11 @@
 import sys
 import time
 
-from sessionmanager import *
 from sqlalchemy import func, distinct, inspect
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.query import Query
+
+from sessionmanager import *
 
 __author__ = 'heyu'
 """
@@ -161,7 +162,7 @@ class DdlUpdateFields():
         return self.fields
 
 
-class Dal(SessionBase):
+class Dal():
     """
         封装数据库操作的操作类,支持多线程
     """
@@ -328,16 +329,17 @@ class Dal(SessionBase):
     def get_distinct_field(self, distinct_field, condition):
         """
             返回去重的列,支持多列
-        :param distinct_field: list | tuple
-        :param condition:
+        :type distinct_field: list | tuple
+        :type condition:
         :rtype: list
         """
         if not isinstance(distinct_field, (list, tuple)):
             distinct_field = [distinct_field]
         results = self.get_field_list(DdlUpdateFields(*distinct_field), condition)
         out_list = []
-        for result in set(results):
-            out_list.append(result)
+        for result in results:
+            if result not in out_list:
+                out_list.append(result)
         return out_list
 
     @DeprecationWarning
@@ -498,7 +500,7 @@ class Dal(SessionBase):
             count = base_query.update(update_dict, synchronize_session=False)
             self.session.commit()
             return count
-        except Exception, e:
+        except Exception:
             self.session.rollback()
             return False
 
