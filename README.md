@@ -1,7 +1,7 @@
 simple-sqlalchemy
 
 simple-sqlalchemy provides easy and simple query methods to access mysql data. It
-lets you get or change data in a easy way, especially when you get many conditions and
+lets you get or change data in an easy way, especially when you get many conditions and
 will get any of them.For example, in a query page.
 
 firstly, execute 'source ddl.sql' in your mysql server
