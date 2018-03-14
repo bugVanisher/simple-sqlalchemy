@@ -465,7 +465,7 @@ class Dal():
             self.session.add_all(objs)
             self.session.commit()
             return True
-        except Exception, e:
+        except Exception:
             self.session.rollback()
             return False
 

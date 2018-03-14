@@ -28,7 +28,7 @@ setup(
     author_email="hy99526@alibaba-inc.com",
     description="a simple query tools based on sqlalchemy",
     long_description=__doc__,
-    install_requires=["sqlalchemy==1.0.0b4"],
+    install_requires=["sqlalchemy>=1.0.0b4"],
     url="http://git.ucweb.local/heyu/simple-sqlalchemy",
     packages=["simple"],
     platforms=['all'],
