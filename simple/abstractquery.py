@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # coding:utf-8
 import sys
 import time
@@ -524,7 +524,7 @@ class Dal():
     def count(self, single_field, condition):
         """
             计算数量
-        :type single_field: InstrumentedAttribute
+        :type single_field:
         :type condition:
         :rtype:
         """

@@ -61,7 +61,6 @@ class SessionBase():
         '''
         if session in cls.sessions:
             session.close()
-        print("close {} done.".format(session))
 
     @classmethod
     def close_sessions(cls):

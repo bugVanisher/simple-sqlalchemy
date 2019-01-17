@@ -1,10 +1,12 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import unittest
-import time
+
 from sqlalchemy import Column, BIGINT, VARCHAR, INT, SMALLINT
 from sqlalchemy.ext.declarative import declarative_base
+
 from simple.abstractquery import *
 
 """
@@ -79,7 +81,7 @@ class ChargeRecordQuery(BaseQuery):
 
 
 class Tests(unittest.TestCase):
-    basedao = Dal(DBConfig(host="127.0.0.1", port=3306, user="", pwd="", db="simple_demo"))
+    basedao = Dal(DBConfig(host="127.0.0.1", port=3306, user=os.environ.get('db_user'), pwd=os.environ.get('db_pass'), db="simple_demo"))
 
     @classmethod
     def setUpClass(cls):
@@ -149,7 +151,7 @@ class Tests(unittest.TestCase):
         query2.set_charge_status(2)
         query2.set_ectime(self.now + 1000)
         count = self.basedao.count(ChargeRecord.charge_record_id, query2)
-        self.assertEqual(count[0], 3)
+        self.assertEqual(count, 3)
 
         query2.set_page(1)
         query2.set_count(10)
@@ -168,7 +170,7 @@ class Tests(unittest.TestCase):
         query = ChargeRecordQuery()
         query.set_charge_record_ids([1419496454297218])
         self.basedao.update(ChargeRecord, update, query)
-        charge_record = self.basedao.get(1419496454297218, ChargeRecord)[0]
+        charge_record = self.basedao.get(1419496454297218, ChargeRecord)
         self.assertEqual(charge_record.charge_status, 3)
         self.assertEqual(charge_record.finish_time, self.now + 10)
         self.assertEqual(charge_record.utime, self.now + 10)
