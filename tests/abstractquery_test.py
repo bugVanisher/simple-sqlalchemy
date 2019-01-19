@@ -46,6 +46,7 @@ class ChargeRecordQuery(BaseQuery):
     charge_status = None
     sfinish_time = None
     efinish_time = None
+    charge_record_id = None
 
     @BindAttrField(ChargeRecord.charge_record_id, OperateType.IN, JoinType.AND_JOIN)
     def set_charge_record_ids(self, value):
@@ -53,7 +54,7 @@ class ChargeRecordQuery(BaseQuery):
 
     @BindAttrField(ChargeRecord.charge_record_id, OperateType.EQUALS, JoinType.AND_JOIN)
     def set_charge_record_id(self, value):
-        self.charge_record_ids = value
+        self.charge_record_id = value
 
     @BindAttrField(ChargeRecord.out_bill_no, OperateType.EQUALS, JoinType.AND_JOIN)
     def set_out_bill_no(self, value):

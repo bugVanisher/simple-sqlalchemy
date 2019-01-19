@@ -7,7 +7,7 @@ will get any of them.For example, in a query page.
 
 Links
 `````
-* `documentation <http://git.ucweb.local/heyu/simple-sqlalchemy>`_
+* `documentation <https://github.com/gannicus-yu/simple-sqlalchemy/>`_
 *
 
 
@@ -25,11 +25,11 @@ setup(
     name="simple-sqlalchemy",
     version="0.0.1",
     author="heyu",
-    author_email="hy99526@alibaba-inc.com",
+    author_email="gannicus_yu@163.com",
     description="a simple query tools based on sqlalchemy",
     long_description=__doc__,
     install_requires=["sqlalchemy>=1.0.0b4"],
-    url="http://git.ucweb.local/heyu/simple-sqlalchemy",
+    url="https://github.com/gannicus-yu/simple-sqlalchemy",
     packages=["simple"],
     platforms=['all'],
     test_suite="tests"
